@@ -12,6 +12,13 @@ const getAI = (apiKey: string) => {
 
 const parseJSON = (text: string) => {
     try {
+        // Find the first '{' and last '}' to handle potential markdown code blocks
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+            const jsonStr = text.substring(start, end + 1);
+            return JSON.parse(jsonStr);
+        }
         return JSON.parse(text);
     } catch (e) {
         console.error("JSON Parse Error", e);
@@ -30,12 +37,14 @@ export const parseResume = async (
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: fileBase64 } },
-          { text: prompt }
-        ]
-      },
+      contents: [
+        {
+          parts: [
+            { inlineData: { mimeType, data: fileBase64 } },
+            { text: prompt }
+          ]
+        }
+      ],
       config: { responseMimeType: "application/json" },
     });
     return parseJSON(response.text || "{}");
@@ -54,7 +63,11 @@ export const generateCoreIdentity = async (apiKey: string, profile: StudentProfi
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: fullPrompt,
+            contents: [
+              {
+                parts: [{ text: fullPrompt }]
+              }
+            ],
             config: { responseMimeType: "application/json", temperature: 0.6 }
         });
         return parseJSON(response.text || "{}");
@@ -73,7 +86,11 @@ export const generateVisualAnalysis = async (apiKey: string, profile: StudentPro
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: fullPrompt,
+            contents: [
+              {
+                parts: [{ text: fullPrompt }]
+              }
+            ],
             config: { responseMimeType: "application/json", temperature: 0.6 }
         });
         const data = parseJSON(response.text || "{}");
@@ -94,7 +111,11 @@ export const generateRoadmap = async (apiKey: string, profile: StudentProfile): 
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: fullPrompt,
+            contents: [
+              {
+                parts: [{ text: fullPrompt }]
+              }
+            ],
             config: { responseMimeType: "application/json", temperature: 0.6 }
         });
         return parseJSON(response.text || "{}");
