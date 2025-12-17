@@ -38,10 +38,6 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
   }, [analysis]);
 
   // Pricing Logic (Refined)
-  // Logic: 
-  // 1. Only count 'selected' products.
-  // 2. Original Total = Sum of (originalPrice if it exists, else price).
-  // 3. Deal Total = Sum of (price).
   const selectedProducts = products.filter(p => p.selected);
   const totalDealPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
   const totalOriginalPrice = selectedProducts.reduce((sum, p) => sum + (p.originalPrice || p.price), 0);
@@ -103,42 +99,53 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
 
   const handleExportImage = async () => {
     if (!reportRef.current) return;
+    
+    // 1. Snapshot current state
+    const wasEditMode = isEditMode;
+    
+    // 2. Prepare for Export (Force View Mode)
     setIsExporting(true);
     setIsEditMode(false);
     
     try {
-      // 1. Force scroll to top to ensure complete render
-      const originalScroll = window.scrollY;
-      window.scrollTo(0, 0);
-      
-      // 2. Wait for UI to settle
+      // Wait for React render cycle to remove edit controls completely
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // 3. Capture with explicit settings
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // High resolution (Retina)
-        useCORS: true, // Allow cross-origin images
-        allowTaint: true,
+      const element = reportRef.current;
+      
+      // 3. Generate Canvas
+      // Critical: Removed allowTaint: true as it causes SecurityError with toDataURL
+      // Critical: Set height to scrollHeight to capture full page content
+      const canvas = await html2canvas(element, {
+        scale: 2, // High Definition (Retina)
+        useCORS: true, // Handle external images (e.g. icons) properly
+        allowTaint: false, // Must be false for toDataURL to work
         backgroundColor: '#ffffff',
-        width: reportRef.current.offsetWidth,
-        height: reportRef.current.offsetHeight,
+        width: element.scrollWidth, // Capture full content width
+        height: element.scrollHeight, // Capture full content height (scrolling content)
+        x: 0,
+        y: 0,
+        scrollX: 0, // Force top alignment in capture
+        scrollY: 0,
         logging: false,
       });
 
-      // 4. Restore scroll
-      window.scrollTo(0, originalScroll);
-
-      // 5. Download
+      // 4. Trigger Download
       const image = canvas.toDataURL("image/png", 1.0);
       const link = document.createElement('a');
       link.download = `HighMark_Report_${profile.name}_${new Date().toISOString().slice(0,10)}.png`;
       link.href = image;
+      document.body.appendChild(link); // Firefox requires link to be in body
       link.click();
+      document.body.removeChild(link);
+
     } catch (error: any) {
       console.error("Export failed:", error);
-      alert("导出失败，请重试或尝试手动截图。\n错误信息: " + error.message);
+      alert(`导出失败: ${error.message}\n建议使用系统截图工具或尝试缩小浏览器窗口。`);
     } finally {
       setIsExporting(false);
+      // Restore Edit Mode if it was previously active
+      if (wasEditMode) setIsEditMode(true);
     }
   };
 
