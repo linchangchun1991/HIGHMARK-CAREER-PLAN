@@ -1,14 +1,16 @@
+
 import React, { useState } from 'react';
 import { StudentProfile } from '../types';
 import { Upload, ArrowRight, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { parseResume } from '../services/geminiService';
 
 interface InputFormProps {
+  apiKey: string;
   onSubmit: (profile: StudentProfile) => void;
   isLoading: boolean;
 }
 
-const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
+const InputForm: React.FC<InputFormProps> = ({ apiKey, onSubmit, isLoading }) => {
   const [isParsing, setIsParsing] = useState(false);
   const [parseSuccess, setParseSuccess] = useState(false);
   
@@ -43,7 +45,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
         const base64Data = reader.result as string;
         const base64Content = base64Data.split(',')[1];
         
-        const extractedData = await parseResume(base64Content, file.type);
+        const extractedData = await parseResume(apiKey, base64Content, file.type);
         
         // Helper to safely extract string values from AI response which might be arrays or non-strings
         const safeStr = (val: any) => {
@@ -65,7 +67,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
       };
     } catch (error) {
       setIsParsing(false);
-      alert("简历解析失败，请手动填写。");
+      alert("简历解析失败，请手动填写或检查 API Key。");
     }
   };
 

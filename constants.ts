@@ -1,7 +1,6 @@
 
 import { ProductItem } from './types';
 
-export const API_KEY_V2 = "AIzaSyAh0aV0Dotra2iOD_B0jW_NWMjimz-udo0";
 export const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com"; 
 
 // Optimized "Professional Consulting" Product List

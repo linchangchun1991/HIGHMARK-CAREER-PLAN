@@ -1,10 +1,11 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, StudentProfile } from "../types";
-import { PROMPT_CORE, PROMPT_VISUALS, PROMPT_ROADMAP, REAL_CASES_DB, API_KEY_V2, GEMINI_API_BASE_URL } from "../constants";
+import { PROMPT_CORE, PROMPT_VISUALS, PROMPT_ROADMAP, REAL_CASES_DB, GEMINI_API_BASE_URL } from "../constants";
 
-const getAI = () => {
+const getAI = (apiKey: string) => {
   return new GoogleGenAI({ 
-      apiKey: API_KEY_V2, 
+      apiKey: apiKey, 
       baseUrl: GEMINI_API_BASE_URL 
   });
 };
@@ -19,10 +20,11 @@ const parseJSON = (text: string) => {
 }
 
 export const parseResume = async (
+  apiKey: string,
   fileBase64: string,
   mimeType: string
 ): Promise<Partial<StudentProfile>> => {
-  const ai = getAI();
+  const ai = getAI(apiKey);
   const prompt = `Extract: name, university, major, graduationYear, resumeText. JSON.`;
   
   try {
@@ -44,8 +46,8 @@ export const parseResume = async (
 };
 
 // 1. Fast Core Identity (ATS + Verdict)
-export const generateCoreIdentity = async (profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
-    const ai = getAI();
+export const generateCoreIdentity = async (apiKey: string, profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
+    const ai = getAI(apiKey);
     const candidateContext = `Name: ${profile.name}, Major: ${profile.major}, School: ${profile.university}`;
     const fullPrompt = `${PROMPT_CORE} \n ${candidateContext}`;
 
@@ -63,8 +65,8 @@ export const generateCoreIdentity = async (profile: StudentProfile): Promise<Par
 };
 
 // 2. Visuals (Radar + Gap + Financial)
-export const generateVisualAnalysis = async (profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
-    const ai = getAI();
+export const generateVisualAnalysis = async (apiKey: string, profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
+    const ai = getAI(apiKey);
     const candidateContext = `Target Role: ${profile.targetRole}, Target Tier: ${profile.targetTier}`;
     const fullPrompt = `${PROMPT_VISUALS} \n ${candidateContext}`;
 
@@ -84,8 +86,8 @@ export const generateVisualAnalysis = async (profile: StudentProfile): Promise<P
 };
 
 // 3. Roadmap (Timeline + Stories)
-export const generateRoadmap = async (profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
-    const ai = getAI();
+export const generateRoadmap = async (apiKey: string, profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
+    const ai = getAI(apiKey);
     const contextData = `REAL_CASES_DB: ${JSON.stringify(REAL_CASES_DB)}`;
     const fullPrompt = `${PROMPT_ROADMAP} \n ${contextData}`;
 

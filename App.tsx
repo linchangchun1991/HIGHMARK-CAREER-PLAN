@@ -1,17 +1,21 @@
+
 import React, { useState } from 'react';
 import Layout from './components/Layout';
 import InputForm from './components/InputForm';
 import ReportView from './components/ReportView';
+import ApiKeyModal from './components/ApiKeyModal';
 import { StudentProfile, AnalysisResult } from './types';
 import { generateCoreIdentity, generateVisualAnalysis, generateRoadmap } from './services/geminiService';
 
 const App: React.FC = () => {
+  const [apiKey, setApiKey] = useState<string>('');
   const [step, setStep] = useState<'input' | 'report'>('input');
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
 
   const handleFormSubmit = async (data: StudentProfile) => {
+    if (!apiKey) return;
     setLoading(true);
     setProfile(data);
 
@@ -30,10 +34,10 @@ const App: React.FC = () => {
     setAnalysis(initialAnalysis);
 
     try {
-      // 1. Fire all requests in parallel
-      const corePromise = generateCoreIdentity(data);
-      const visualsPromise = generateVisualAnalysis(data);
-      const roadmapPromise = generateRoadmap(data);
+      // 1. Fire all requests in parallel with API Key
+      const corePromise = generateCoreIdentity(apiKey, data);
+      const visualsPromise = generateVisualAnalysis(apiKey, data);
+      const roadmapPromise = generateRoadmap(apiKey, data);
 
       // 2. Await Core (Fastest) -> Render UI Immediately
       const coreResult = await corePromise;
@@ -72,6 +76,8 @@ const App: React.FC = () => {
 
   return (
     <Layout>
+      {!apiKey && <ApiKeyModal onSubmit={setApiKey} />}
+      
       <div className="w-full max-w-7xl px-4 py-8 flex flex-col items-center">
         {step === 'input' && (
           <>
@@ -85,7 +91,7 @@ const App: React.FC = () => {
                 <span className="text-sm opacity-80">上传简历，即刻生成 MBB 级职业发展全案报告</span>
               </p>
             </div>
-            <InputForm onSubmit={handleFormSubmit} isLoading={loading} />
+            <InputForm apiKey={apiKey} onSubmit={handleFormSubmit} isLoading={loading} />
           </>
         )}
 
