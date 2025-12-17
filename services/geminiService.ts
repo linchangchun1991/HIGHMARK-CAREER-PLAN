@@ -1,12 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, StudentProfile } from "../types";
-import { PROMPT_CORE, PROMPT_VISUALS, PROMPT_ROADMAP, REAL_CASES_DB, GEMINI_API_BASE_URL } from "../constants";
+import { PROMPT_CORE, PROMPT_VISUALS, PROMPT_ROADMAP, REAL_CASES_DB } from "../constants";
 
 const getAI = (apiKey: string) => {
+  // Initialize with API Key only, as per standard documentation
   return new GoogleGenAI({ 
-      apiKey: apiKey, 
-      baseUrl: GEMINI_API_BASE_URL 
+      apiKey: apiKey
   });
 };
 
