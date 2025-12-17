@@ -104,7 +104,7 @@ ${SHARED_ROLE_DEF}
       "skills": ["String", "String", "String", "String"]
     }
   },
-  "suggestedPlanName": "String"
+  "suggestedPlanName": "String (Must be format: '{Name}同学职业发展规划报告')"
 }
 `;
 

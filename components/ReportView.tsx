@@ -143,7 +143,7 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                  <Gem size={14} /> HighMark Career Planning System
               </div>
               <h1 className="text-5xl font-serif font-bold mb-6 leading-tight">
-                 <EditableText value={editableAnalysis.suggestedPlanName || `${profile.name} · 职业规划发展报告`} onChange={(v) => setEditableAnalysis({...editableAnalysis, suggestedPlanName: v})} />
+                 <EditableText value={editableAnalysis.suggestedPlanName || `${profile.name}同学职业发展规划报告`} onChange={(v) => setEditableAnalysis({...editableAnalysis, suggestedPlanName: v})} />
               </h1>
               <div className="flex items-center flex-wrap gap-6 text-slate-300 text-base font-medium">
                  <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded border border-slate-700">

@@ -44,9 +44,9 @@ const App: React.FC = () => {
       setAnalysis(prev => ({
           ...prev!,
           ...coreResult,
-          // Ensure defaults if AI fails
+          // Ensure defaults if AI fails. Enforce naming convention.
           atsScore: coreResult.atsScore || 65,
-          suggestedPlanName: coreResult.suggestedPlanName || `${data.name}_${data.university}_专属职业规划报告`
+          suggestedPlanName: coreResult.suggestedPlanName || `${data.name}同学职业发展规划报告`
       }));
       
       setStep('report');
