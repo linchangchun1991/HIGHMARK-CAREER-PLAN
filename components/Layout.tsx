@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-200 px-2 py-1 rounded">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            System V2.0 Online
+            System V2.1 Ready
           </div>
         </div>
       </header>

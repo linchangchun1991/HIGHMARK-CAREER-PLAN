@@ -51,6 +51,7 @@
         background-size: 20px 20px;
       }
     </style>
+    <!-- REMOVED IMPORTMAP to fix Vercel White Screen Issue -->
 <script type="importmap">
 {
   "imports": {
@@ -69,7 +70,6 @@
 </head>
   <body class="bg-slate-100 text-slate-900 font-sans antialiased selection:bg-highmark-gold selection:text-white">
     <div id="root"></div>
-    <!-- Pointing to ./index.tsx assuming files are in the root directory -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
