@@ -41,13 +41,21 @@ const App: React.FC = () => {
 
       // 2. Await Core (Fastest) -> Render UI Immediately
       const coreResult = await corePromise;
-      setAnalysis(prev => ({
-          ...prev!,
+      
+      setAnalysis(prev => {
+        if (!prev) return initialAnalysis;
+        // Force naming convention if AI fails to provide it strictly
+        const planName = coreResult.suggestedPlanName && coreResult.suggestedPlanName.includes('报告') 
+            ? coreResult.suggestedPlanName 
+            : `${data.name}同学职业发展规划报告`;
+            
+        return {
+          ...prev,
           ...coreResult,
-          // Ensure defaults if AI fails. Enforce naming convention.
           atsScore: coreResult.atsScore || 65,
-          suggestedPlanName: coreResult.suggestedPlanName || `${data.name}同学职业发展规划报告`
-      }));
+          suggestedPlanName: planName
+        };
+      });
       
       setStep('report');
       setLoading(false); 
@@ -69,7 +77,8 @@ const App: React.FC = () => {
       });
 
     } catch (error) {
-      alert("生成报告时出错: " + (error as Error).message);
+      console.error(error);
+      alert("生成报告时出错，请检查网络或 API Key");
       setLoading(false);
     }
   };
