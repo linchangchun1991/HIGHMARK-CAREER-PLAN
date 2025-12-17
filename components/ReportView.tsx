@@ -37,14 +37,19 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
     }));
   }, [analysis]);
 
-  // Pricing Logic
+  // Pricing Logic (Revised)
   const selectedProducts = products.filter(p => p.selected);
-  const finalPrice = selectedProducts.reduce((sum, p) => sum + (p.originalPrice || p.price), 0);
+  
+  // 1. Total Deal Price (What the client pays) -> Sum of 'price'
+  const totalDealPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
+  
+  // 2. Total Original Price (Anchor price) -> Sum of 'originalPrice' (fallback to 'price' if no original)
+  const totalOriginalPrice = selectedProducts.reduce((sum, p) => sum + (p.originalPrice || p.price), 0);
   
   // Clean text helper (removes markdown bolding)
   const cleanText = (text: string) => {
       if(!text) return "";
-      return text.replace(/\*\*/g, '').replace(/\*/g, '•'); // Replace stars with bullets if needed
+      return text.replace(/\*\*/g, '').replace(/\*/g, '•'); 
   };
 
   const displayTimeline = (editableAnalysis.timeline && editableAnalysis.timeline.length > 0) 
@@ -76,22 +81,36 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
     setIsEditMode(false);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // 1. Force scroll to top to ensure complete render
+      const originalScroll = window.scrollY;
+      window.scrollTo(0, 0);
+      
+      // 2. Wait for UI to settle
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // 3. Capture with explicit settings
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
+        scale: 2, // High resolution (Retina)
+        useCORS: true, // Allow cross-origin images
+        allowTaint: true,
         backgroundColor: '#ffffff',
+        width: reportRef.current.offsetWidth,
+        height: reportRef.current.offsetHeight,
         logging: false,
-        windowWidth: 1200,
       });
 
+      // 4. Restore scroll
+      window.scrollTo(0, originalScroll);
+
+      // 5. Download
       const image = canvas.toDataURL("image/png", 1.0);
       const link = document.createElement('a');
-      link.download = `HighMark_Report_${profile.name}.png`;
+      link.download = `HighMark_Report_${profile.name}_${new Date().toISOString().slice(0,10)}.png`;
       link.href = image;
       link.click();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Export failed:", error);
+      alert("导出失败，请重试或尝试手动截图。\n错误信息: " + error.message);
     } finally {
       setIsExporting(false);
     }
@@ -123,13 +142,18 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
         <div className="flex items-center gap-3">
             <span className="font-bold text-sm uppercase tracking-wider text-highmark-gold">Consultant Mode</span>
             <div className="h-6 w-px bg-slate-600"></div>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white select-none">
                 <input type="checkbox" checked={isEditMode} onChange={() => setIsEditMode(!isEditMode)} className="accent-highmark-gold"/>
-                <span className="text-sm">启用编辑</span>
+                <span className="text-sm">启用编辑 / 产品勾选</span>
             </label>
         </div>
-        <button onClick={handleExportImage} disabled={isExporting} className="bg-highmark-gold text-slate-900 px-4 py-2 rounded font-bold hover:bg-white flex items-center gap-2">
-            {isExporting ? '生成中...' : <><Download size={16} /> 导出高清报告</>}
+        <button 
+          onClick={handleExportImage} 
+          disabled={isExporting} 
+          className="bg-highmark-gold text-slate-900 px-4 py-2 rounded font-bold hover:bg-white flex items-center gap-2 transition-colors"
+        >
+            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isExporting ? '生成高清图片...' : '导出全案报告'}
         </button>
       </div>
 
@@ -412,7 +436,6 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                 <h3 className="text-2xl font-bold text-slate-900">投资回报测算 (ROI)</h3>
              </div>
 
-            {/* Added gap-8 and removed absolute positioning for labels to prevent overlap */}
             <div className="bg-slate-900 text-white rounded-2xl p-8 flex flex-col md:flex-row items-center gap-12">
                 <div className="flex-1 w-full flex justify-around items-end h-56 pt-8">
                     {/* DIY BAR */}
@@ -470,15 +493,28 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
 
              <div className="space-y-4 mb-8">
                  {products.filter(p => !p.isBonus).map((product) => (
-                     <div key={product.id} className="bg-white p-6 rounded-xl border-l-4 border-highmark-gold shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-                         <div className="flex-1">
-                             <div className="flex items-center gap-2 mb-1">
-                                <ShoppingBag size={16} className="text-highmark-900" />
-                                <h4 className="font-bold text-lg text-slate-900">
-                                    <EditableText value={product.name} onChange={(v) => updateProduct(product.id, 'name', v)} />
-                                </h4>
+                     <div 
+                        key={product.id} 
+                        className={`bg-white p-6 rounded-xl border-l-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 transition-all ${product.selected ? 'border-highmark-gold opacity-100' : 'border-slate-200 opacity-50 grayscale'}`}
+                     >
+                         <div className="flex-1 w-full">
+                             <div className="flex items-center gap-3 mb-1">
+                                {isEditMode && (
+                                   <input 
+                                     type="checkbox" 
+                                     checked={product.selected} 
+                                     onChange={(e) => updateProduct(product.id, 'selected', e.target.checked)}
+                                     className="w-5 h-5 accent-highmark-gold cursor-pointer"
+                                   />
+                                )}
+                                <div className="flex items-center gap-2">
+                                    <ShoppingBag size={16} className="text-highmark-900" />
+                                    <h4 className="font-bold text-lg text-slate-900">
+                                        <EditableText value={product.name} onChange={(v) => updateProduct(product.id, 'name', v)} />
+                                    </h4>
+                                </div>
                              </div>
-                             <p className="text-sm text-slate-500 ml-6">
+                             <p className="text-sm text-slate-500 ml-8">
                                 <EditableText value={product.description} onChange={(v) => updateProduct(product.id, 'description', v)} />
                              </p>
                          </div>
@@ -495,18 +531,30 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                         {products.filter(p => p.isBonus).map((product) => (
-                            <div key={product.id} className="bg-white border-2 border-red-50 p-4 rounded-xl flex justify-between items-center shadow-sm relative overflow-hidden group">
+                            <div key={product.id} className={`bg-white border-2 p-4 rounded-xl flex justify-between items-center shadow-sm relative overflow-hidden group ${product.selected ? 'border-red-50 opacity-100' : 'border-slate-100 opacity-40'}`}>
                                 <div className="relative z-10 w-full">
-                                    <div className="font-bold text-slate-800 text-sm mb-1">
-                                        <EditableText value={product.name} onChange={(v) => updateProduct(product.id, 'name', v)} />
+                                    <div className="flex items-center gap-2 mb-1">
+                                        {isEditMode && (
+                                           <input 
+                                             type="checkbox" 
+                                             checked={product.selected} 
+                                             onChange={(e) => updateProduct(product.id, 'selected', e.target.checked)}
+                                             className="w-4 h-4 accent-red-500 cursor-pointer"
+                                           />
+                                        )}
+                                        <div className="font-bold text-slate-800 text-sm">
+                                            <EditableText value={product.name} onChange={(v) => updateProduct(product.id, 'name', v)} />
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 pl-6">
                                         <EditableText value={product.description} onChange={(v) => updateProduct(product.id, 'description', v)} />
                                     </div>
                                 </div>
-                                <span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded shadow-md absolute top-2 right-2">
-                                    FREE
-                                </span>
+                                {product.selected && (
+                                    <span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded shadow-md absolute top-2 right-2">
+                                        FREE
+                                    </span>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -533,11 +581,15 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                      </div>
                      
                      <div className="flex flex-col items-end">
-                         <div className="text-slate-400 text-sm mb-1 line-through">原价: ¥{finalPrice.toLocaleString()}</div>
+                         {totalOriginalPrice > totalDealPrice && (
+                            <div className="text-slate-400 text-sm mb-1 line-through">
+                                原价: ¥{totalOriginalPrice.toLocaleString()}
+                            </div>
+                         )}
                          <div className="flex items-end gap-2">
                              <span className="text-2xl font-serif text-slate-500 pb-2">¥</span>
                              <span className="text-7xl font-serif font-black text-highmark-gold leading-none tracking-tight">
-                                 {finalPrice.toLocaleString()}
+                                 {totalDealPrice.toLocaleString()}
                              </span>
                          </div>
                      </div>
