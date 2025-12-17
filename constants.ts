@@ -4,46 +4,57 @@ import { ProductItem } from './types';
 export const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com"; 
 
 // Optimized "Professional Consulting" Product List
+// Updated based on HighMark specific requirements
 export const DEFAULT_PRODUCTS: ProductItem[] = [
   {
     id: 'p1',
-    name: 'HighMark 旗舰·千里马全案',
+    name: 'HighMark 旗舰·千里马求职全案',
     price: 69800,
     originalPrice: 88000,
-    description: '名企大厂导师 1v1 结果负责制',
-    features: ['无限次内推机会', '岗位定制规划', '求职教练全程陪跑', '名企导师 1v1 辅导', '模拟面试 & 复盘'],
+    description: '名企大厂导师 1v1 结果负责制，覆盖职业规划、简历、笔面试全流程',
+    features: ['无限次内推', '岗位定制规划', '求职教练陪跑', '名企导师辅导'],
     selected: true,
     isBonus: false,
   },
   {
     id: 'p2',
-    name: '【背景提升】名企核心项目履历重塑',
-    price: 18000,
-    originalPrice: 25000,
-    description: '补齐“数据思维”与“大厂背书”，弥补学历或经历短板',
-    features: ['真实大厂数据项目', 'Tableau/SQL 实战', '导师推荐信', '弥补简历空白'],
-    selected: true,
+    name: '名企核心岗位 PTA 实训项目',
+    price: 15800,
+    originalPrice: 19800,
+    description: '4-6周远程实地项目，积累核心业务经验，弥补简历短板',
+    features: ['真实业务场景', '导师推荐信', '支持背调', '项目产出物'],
+    selected: false,
     isBonus: false,
   },
   {
     id: 'p3',
-    name: '【赠送】网申代投服务 (100家)',
-    price: 0,
-    originalPrice: 12800,
-    description: '今日签约限时赠送 (Bonus)',
-    features: ['人工筛选岗位', '覆盖投递 (100家)', '每日进度报表', '查漏补缺'],
-    selected: true,
-    isBonus: true,
+    name: '大厂人力资源 (HR) 实习实训',
+    price: 12800,
+    originalPrice: 16800,
+    description: '深入理解招聘逻辑与筛选标准，掌握HR视角求职技巧',
+    features: ['简历筛选实战', '面试官视角', 'HRD导师带教'],
+    selected: false,
+    isBonus: false,
   },
   {
     id: 'p4',
-    name: '【赠送】名企大厂导师1v1课时 (2节)',
-    price: 0,
-    originalPrice: 6800,
-    description: '今日签约限时赠送 (Bonus)',
-    features: ['行业通识课', 'OT真题训练', '性格测试解析'],
+    name: '全球名企网申代投服务 (Pro)',
+    price: 9800,
+    originalPrice: 12800,
+    description: '人工筛选+精准投递，覆盖100+家目标企业，释放学员时间',
+    features: ['每日投递进度', '精准岗位匹配', '查漏补缺'],
     selected: true,
-    isBonus: true,
+    isBonus: true, // Initially set as a bonus/gift strategy
+  },
+  {
+    id: 'p5',
+    name: '大厂笔试/OT 深度陪练',
+    price: 6800,
+    originalPrice: 8800,
+    description: '针对性突破行测、性格测试、专业笔试难关',
+    features: ['真题题库', '做题技巧', '模拟测试'],
+    selected: true,
+    isBonus: true, // Initially set as a bonus/gift strategy
   }
 ];
 

@@ -6,7 +6,7 @@ import RadarChartComponent from './RadarChartComponent';
 import { 
   GraduationCap, TrendingUp, Target, CheckCircle2, Download, 
   Zap, MonitorCheck, Calculator, Rocket, Gem, Lightbulb, Map, 
-  Loader2, ShoppingBag, Gift, Check, AlertCircle, BarChart3, XCircle, ArrowRight, AlertTriangle, ShieldCheck, Tag, BrainCircuit, User
+  Loader2, ShoppingBag, Gift, Check, AlertCircle, BarChart3, XCircle, ArrowRight, AlertTriangle, ShieldCheck, Tag, BrainCircuit, User, Plus, Trash2, Settings2
 } from 'lucide-react';
 import { DEFAULT_PRODUCTS } from '../constants';
 
@@ -37,13 +37,13 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
     }));
   }, [analysis]);
 
-  // Pricing Logic (Revised)
+  // Pricing Logic (Refined)
+  // Logic: 
+  // 1. Only count 'selected' products.
+  // 2. Original Total = Sum of (originalPrice if it exists, else price).
+  // 3. Deal Total = Sum of (price).
   const selectedProducts = products.filter(p => p.selected);
-  
-  // 1. Total Deal Price (What the client pays) -> Sum of 'price'
   const totalDealPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
-  
-  // 2. Total Original Price (Anchor price) -> Sum of 'originalPrice' (fallback to 'price' if no original)
   const totalOriginalPrice = selectedProducts.reduce((sum, p) => sum + (p.originalPrice || p.price), 0);
   
   // Clean text helper (removes markdown bolding)
@@ -55,6 +55,32 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
   const displayTimeline = (editableAnalysis.timeline && editableAnalysis.timeline.length > 0) 
     ? editableAnalysis.timeline 
     : [];
+
+  // Product Management Functions
+  const addProduct = () => {
+      const newProduct: ProductItem = {
+          id: `new_${Date.now()}`,
+          name: '自定义服务项目',
+          description: '请输入服务描述...',
+          price: 0,
+          originalPrice: 0,
+          selected: true,
+          isBonus: false
+      };
+      setProducts([...products, newProduct]);
+  };
+
+  const deleteProduct = (id: string) => {
+      if(window.confirm('确定要删除这个产品项吗？')) {
+          setProducts(products.filter(p => p.id !== id));
+      }
+  };
+
+  const toggleProductBonus = (id: string) => {
+      setProducts(products.map(p => 
+          p.id === id ? { ...p, isBonus: !p.isBonus } : p
+      ));
+  };
 
   // Components
   const EditableText = ({ 
@@ -140,17 +166,19 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
       {/* Consultant Toolbar */}
       <div className="flex justify-between items-center bg-slate-800 text-white p-4 rounded-lg mb-6 shadow-lg no-print sticky top-20 z-40">
         <div className="flex items-center gap-3">
-            <span className="font-bold text-sm uppercase tracking-wider text-highmark-gold">Consultant Mode</span>
+            <span className="font-bold text-sm uppercase tracking-wider text-highmark-gold flex items-center gap-2">
+                <Settings2 size={16} /> Consultant Mode
+            </span>
             <div className="h-6 w-px bg-slate-600"></div>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white select-none">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white select-none bg-slate-700 px-3 py-1 rounded transition-colors">
                 <input type="checkbox" checked={isEditMode} onChange={() => setIsEditMode(!isEditMode)} className="accent-highmark-gold"/>
-                <span className="text-sm">启用编辑 / 产品勾选</span>
+                <span className="text-sm">启用编辑 / 调整方案</span>
             </label>
         </div>
         <button 
           onClick={handleExportImage} 
           disabled={isExporting} 
-          className="bg-highmark-gold text-slate-900 px-4 py-2 rounded font-bold hover:bg-white flex items-center gap-2 transition-colors"
+          className="bg-highmark-gold text-slate-900 px-4 py-2 rounded font-bold hover:bg-white flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(212,175,55,0.4)]"
         >
             {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             {isExporting ? '生成高清图片...' : '导出全案报告'}
@@ -484,19 +512,49 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
             </div>
           </section>
 
-          {/* 5. SOLUTION PACKAGE */}
+          {/* 5. SOLUTION PACKAGE - REFACTORED FOR FLEXIBILITY */}
           <section className="bg-slate-50 p-8 md:p-12 rounded-3xl border border-slate-200">
-             <div className="text-center mb-10">
+             <div className="text-center mb-10 relative">
                  <h3 className="text-3xl font-serif font-bold text-slate-900 mb-2">HighMark 全案解决方案</h3>
                  <p className="text-slate-500">All-in-One Exclusive Offer</p>
+                 {isEditMode && (
+                     <button 
+                        onClick={addProduct}
+                        className="absolute right-0 top-0 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg flex items-center gap-1 shadow-lg transition-all"
+                     >
+                        <Plus size={14} /> 添加产品
+                     </button>
+                 )}
              </div>
 
+             {/* MAIN PAID PRODUCTS */}
              <div className="space-y-4 mb-8">
                  {products.filter(p => !p.isBonus).map((product) => (
                      <div 
                         key={product.id} 
-                        className={`bg-white p-6 rounded-xl border-l-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 transition-all ${product.selected ? 'border-highmark-gold opacity-100' : 'border-slate-200 opacity-50 grayscale'}`}
+                        className={`bg-white p-6 rounded-xl border-l-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 transition-all relative group
+                        ${product.selected ? 'border-highmark-gold opacity-100' : 'border-slate-200 opacity-50 grayscale'}`}
                      >
+                         {/* Edit Controls */}
+                         {isEditMode && (
+                             <div className="absolute top-2 right-2 flex gap-2">
+                                <button 
+                                    onClick={() => toggleProductBonus(product.id)}
+                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-500 hover:text-red-500 text-xs flex items-center gap-1"
+                                    title="设为赠品"
+                                >
+                                    <Gift size={14} /> 设为赠品
+                                </button>
+                                <button 
+                                    onClick={() => deleteProduct(product.id)}
+                                    className="p-1.5 bg-red-50 hover:bg-red-100 rounded text-red-400 hover:text-red-600"
+                                    title="删除产品"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                             </div>
+                         )}
+
                          <div className="flex-1 w-full">
                              <div className="flex items-center gap-3 mb-1">
                                 {isEditMode && (
@@ -509,29 +567,57 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                                 )}
                                 <div className="flex items-center gap-2">
                                     <ShoppingBag size={16} className="text-highmark-900" />
-                                    <h4 className="font-bold text-lg text-slate-900">
+                                    <h4 className="font-bold text-lg text-slate-900 w-full">
                                         <EditableText value={product.name} onChange={(v) => updateProduct(product.id, 'name', v)} />
                                     </h4>
                                 </div>
                              </div>
-                             <p className="text-sm text-slate-500 ml-8">
+                             <p className="text-sm text-slate-500 ml-8 w-full">
                                 <EditableText value={product.description} onChange={(v) => updateProduct(product.id, 'description', v)} />
                              </p>
                          </div>
-                         <div className="font-bold text-xl text-slate-900">
-                             ¥<EditableText value={product.price} onChange={(v) => updateProduct(product.id, 'price', Number(v))} />
+                         <div className="text-right min-w-[120px]">
+                             <div className="font-bold text-xl text-slate-900">
+                                 ¥<EditableText value={product.price} onChange={(v) => updateProduct(product.id, 'price', Number(v))} />
+                             </div>
+                             {isEditMode && (
+                                 <div className="text-xs text-slate-400 mt-1">
+                                     原价: ¥<EditableText value={product.originalPrice || product.price} onChange={(v) => updateProduct(product.id, 'originalPrice', Number(v))} />
+                                 </div>
+                             )}
                          </div>
                      </div>
                  ))}
 
-                 <div className="mt-8">
+                 {/* BONUS SECTION */}
+                 <div className="mt-8 pt-6 border-t border-slate-200 border-dashed">
                     <div className="flex items-center gap-2 mb-4">
                         <Gift size={20} className="text-red-500" />
                         <span className="font-bold text-slate-800 text-lg">今日签约赠送 (Bonus)</span>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                         {products.filter(p => p.isBonus).map((product) => (
-                            <div key={product.id} className={`bg-white border-2 p-4 rounded-xl flex justify-between items-center shadow-sm relative overflow-hidden group ${product.selected ? 'border-red-50 opacity-100' : 'border-slate-100 opacity-40'}`}>
+                            <div key={product.id} className={`bg-white border-2 p-4 rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden group 
+                                ${product.selected ? 'border-red-50 opacity-100' : 'border-slate-100 opacity-40'}`}>
+                                
+                                {isEditMode && (
+                                     <div className="absolute top-2 right-2 flex gap-2 z-20">
+                                        <button 
+                                            onClick={() => toggleProductBonus(product.id)}
+                                            className="p-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-500 text-[10px]"
+                                            title="取消赠品"
+                                        >
+                                            移回主列表
+                                        </button>
+                                        <button 
+                                            onClick={() => deleteProduct(product.id)}
+                                            className="p-1 bg-red-50 hover:bg-red-100 rounded text-red-400"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                     </div>
+                                 )}
+
                                 <div className="relative z-10 w-full">
                                     <div className="flex items-center gap-2 mb-1">
                                         {isEditMode && (
@@ -542,16 +628,27 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                                              className="w-4 h-4 accent-red-500 cursor-pointer"
                                            />
                                         )}
-                                        <div className="font-bold text-slate-800 text-sm">
+                                        <div className="font-bold text-slate-800 text-sm w-full">
                                             <EditableText value={product.name} onChange={(v) => updateProduct(product.id, 'name', v)} />
                                         </div>
                                     </div>
-                                    <div className="text-xs text-slate-500 pl-6">
+                                    <div className="text-xs text-slate-500 pl-6 w-full">
                                         <EditableText value={product.description} onChange={(v) => updateProduct(product.id, 'description', v)} />
                                     </div>
                                 </div>
-                                {product.selected && (
-                                    <span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded shadow-md absolute top-2 right-2">
+                                <div className="flex justify-between items-end mt-2 pl-6">
+                                    <div className="text-xs text-slate-400 line-through">
+                                        价值: ¥<EditableText value={product.originalPrice || product.price} onChange={(v) => updateProduct(product.id, 'originalPrice', Number(v))} />
+                                    </div>
+                                    {isEditMode && (
+                                        <div className="text-xs text-red-500 font-bold">
+                                            实付: ¥<EditableText value={product.price} onChange={(v) => updateProduct(product.id, 'price', Number(v))} />
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {product.selected && !isEditMode && (
+                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded shadow-md absolute top-2 right-2">
                                         FREE
                                     </span>
                                 )}
@@ -582,8 +679,11 @@ const ReportView: React.FC<ReportViewProps> = ({ profile, analysis }) => {
                      
                      <div className="flex flex-col items-end">
                          {totalOriginalPrice > totalDealPrice && (
-                            <div className="text-slate-400 text-sm mb-1 line-through">
-                                原价: ¥{totalOriginalPrice.toLocaleString()}
+                            <div className="text-slate-400 text-sm mb-1">
+                                原价: <span className="line-through">¥{totalOriginalPrice.toLocaleString()}</span>
+                                <span className="ml-2 bg-red-600 text-white px-2 py-0.5 rounded text-xs">
+                                    省 ¥{(totalOriginalPrice - totalDealPrice).toLocaleString()}
+                                </span>
                             </div>
                          )}
                          <div className="flex items-end gap-2">
