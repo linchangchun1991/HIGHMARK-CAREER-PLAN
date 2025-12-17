@@ -1,18 +1,12 @@
 
-import { GoogleGenAI } from "@google/genai";
 import { AnalysisResult, StudentProfile } from "../types";
 import { PROMPT_CORE, PROMPT_VISUALS, PROMPT_ROADMAP, REAL_CASES_DB } from "../constants";
 
-const getAI = (apiKey: string) => {
-  // Initialize with API Key only, as per standard documentation
-  return new GoogleGenAI({ 
-      apiKey: apiKey
-  });
-};
+// Using Alibaba Cloud DashScope (Qwen) Compatible API
+const API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
 
 const parseJSON = (text: string) => {
     try {
-        // Find the first '{' and last '}' to handle potential markdown code blocks
         const start = text.indexOf('{');
         const end = text.lastIndexOf('}');
         if (start !== -1 && end !== -1) {
@@ -26,74 +20,98 @@ const parseJSON = (text: string) => {
     }
 }
 
+// Helper to call Qwen API
+const callQwen = async (apiKey: string, model: string, messages: any[], temperature = 0.6) => {
+    const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: model,
+            messages: messages,
+            temperature: temperature,
+            response_format: { type: "json_object" } // Qwen usually supports this or tries to follow system prompt
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Qwen API Error: ${response.status} - ${errText}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || "{}";
+};
+
+// 1. Resume Parsing (Uses Qwen-VL for Vision capabilities)
 export const parseResume = async (
   apiKey: string,
   fileBase64: string,
   mimeType: string
 ): Promise<Partial<StudentProfile>> => {
-  const ai = getAI(apiKey);
-  const prompt = `Extract: name, university, major, graduationYear, resumeText. JSON.`;
+  const prompt = `You are a data extraction assistant. Extract the following fields from the resume image: name, university, major, graduationYear, resumeText (summary of experience). Return valid JSON only.`;
   
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          parts: [
-            { inlineData: { mimeType, data: fileBase64 } },
-            { text: prompt }
-          ]
+  // Format for Vision models in OpenAI compatible API
+  const messages = [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: prompt },
+        { 
+            type: "image_url", 
+            image_url: { 
+                url: `data:${mimeType};base64,${fileBase64}` 
+            } 
         }
-      ],
-      config: { responseMimeType: "application/json" },
-    });
-    return parseJSON(response.text || "{}");
+      ]
+    }
+  ];
+
+  try {
+    // Use qwen-vl-max for best image understanding
+    const jsonText = await callQwen(apiKey, "qwen-vl-max", messages, 0.1);
+    return parseJSON(jsonText);
   } catch (error) {
     console.error("Parse Error", error);
+    // Return empty to allow manual entry if parsing fails
     return {};
   }
 };
 
-// 1. Fast Core Identity (ATS + Verdict)
+// 2. Fast Core Identity (ATS + Verdict)
 export const generateCoreIdentity = async (apiKey: string, profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
-    const ai = getAI(apiKey);
     const candidateContext = `Name: ${profile.name}, Major: ${profile.major}, School: ${profile.university}`;
-    const fullPrompt = `${PROMPT_CORE} \n ${candidateContext}`;
+    const fullPrompt = `${PROMPT_CORE} \n\nCandidate Context:\n${candidateContext}`;
+    
+    const messages = [
+        { role: "system", content: "You are an expert Career Consultant. Output strictly in JSON format." },
+        { role: "user", content: fullPrompt }
+    ];
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
-              {
-                parts: [{ text: fullPrompt }]
-              }
-            ],
-            config: { responseMimeType: "application/json", temperature: 0.6 }
-        });
-        return parseJSON(response.text || "{}");
+        const jsonText = await callQwen(apiKey, "qwen-plus", messages, 0.6);
+        return parseJSON(jsonText);
     } catch (error) {
         console.error("Core Identity Error", error);
         return {};
     }
 };
 
-// 2. Visuals (Radar + Gap + Financial)
+// 3. Visuals (Radar + Gap + Financial)
 export const generateVisualAnalysis = async (apiKey: string, profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
-    const ai = getAI(apiKey);
     const candidateContext = `Target Role: ${profile.targetRole}, Target Tier: ${profile.targetTier}`;
-    const fullPrompt = `${PROMPT_VISUALS} \n ${candidateContext}`;
+    const fullPrompt = `${PROMPT_VISUALS} \n\nCandidate Context:\n${candidateContext}`;
+    
+    const messages = [
+        { role: "system", content: "You are an expert Data Analyst. Output strictly in JSON format." },
+        { role: "user", content: fullPrompt }
+    ];
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
-              {
-                parts: [{ text: fullPrompt }]
-              }
-            ],
-            config: { responseMimeType: "application/json", temperature: 0.6 }
-        });
-        const data = parseJSON(response.text || "{}");
+        const jsonText = await callQwen(apiKey, "qwen-plus", messages, 0.6);
+        const data = parseJSON(jsonText);
         if(data.radarData) data.radarChart = data.radarData;
         return data;
     } catch (error) {
@@ -102,23 +120,19 @@ export const generateVisualAnalysis = async (apiKey: string, profile: StudentPro
     }
 };
 
-// 3. Roadmap (Timeline + Stories)
+// 4. Roadmap (Timeline + Stories)
 export const generateRoadmap = async (apiKey: string, profile: StudentProfile): Promise<Partial<AnalysisResult>> => {
-    const ai = getAI(apiKey);
     const contextData = `REAL_CASES_DB: ${JSON.stringify(REAL_CASES_DB)}`;
-    const fullPrompt = `${PROMPT_ROADMAP} \n ${contextData}`;
+    const fullPrompt = `${PROMPT_ROADMAP} \n\nReference Data:\n${contextData}`;
+
+    const messages = [
+        { role: "system", content: "You are an expert Career Planner. Output strictly in JSON format." },
+        { role: "user", content: fullPrompt }
+    ];
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
-              {
-                parts: [{ text: fullPrompt }]
-              }
-            ],
-            config: { responseMimeType: "application/json", temperature: 0.6 }
-        });
-        return parseJSON(response.text || "{}");
+        const jsonText = await callQwen(apiKey, "qwen-plus", messages, 0.6);
+        return parseJSON(jsonText);
     } catch (error) {
         console.error("Roadmap Error", error);
         return {};

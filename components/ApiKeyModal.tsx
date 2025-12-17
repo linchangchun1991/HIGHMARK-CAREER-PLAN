@@ -7,7 +7,8 @@ interface ApiKeyModalProps {
 }
 
 const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ onSubmit }) => {
-  const [key, setKey] = useState('');
+  // Pre-filled with the key provided by the user for "consultant mode" simulation
+  const [key, setKey] = useState('sk-668c28bae516493d9ea8a3662118ec98');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,16 +32,19 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ onSubmit }) => {
         <form onSubmit={handleSubmit} className="p-8">
           <div className="mb-6">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Gemini API Authorization Key
+              Alibaba Qwen (DashScope) API Key
             </label>
             <input 
               type="password" 
               value={key}
               onChange={(e) => setKey(e.target.value)}
-              placeholder="Enter your AI Studio API Key..."
+              placeholder="sk-..."
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-highmark-gold focus:border-transparent outline-none text-slate-900 font-mono text-sm"
               autoFocus
             />
+            <p className="text-[10px] text-slate-400 mt-2">
+              默认 Key 已预置，点击启动即可连接阿里云通义千问模型 (Qwen-Plus)
+            </p>
           </div>
 
           <button 
