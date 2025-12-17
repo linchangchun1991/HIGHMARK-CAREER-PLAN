@@ -58,6 +58,7 @@ const App: React.FC = () => {
       });
       
       setStep('report');
+      // Keep loading true? No, core is done, we can show the report. Visuals will pop in.
       setLoading(false); 
 
       // 3. Update Visuals when ready
@@ -66,7 +67,7 @@ const App: React.FC = () => {
              if(!prev) return null;
              return { ...prev, ...visualResult };
           });
-      });
+      }).catch(e => console.error("Visuals failed", e));
 
       // 4. Update Roadmap when ready
       roadmapPromise.then(roadmapResult => {
@@ -74,11 +75,11 @@ const App: React.FC = () => {
              if(!prev) return null;
              return { ...prev, ...roadmapResult };
           });
-      });
+      }).catch(e => console.error("Roadmap failed", e));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("生成报告时出错，请检查网络或 API Key");
+      alert(`报告生成失败: ${error.message || "请检查 API Key 或网络连接"}`);
       setLoading(false);
     }
   };
